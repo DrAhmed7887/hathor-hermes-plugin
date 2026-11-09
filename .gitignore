@@ -3,7 +3,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .DS_Store
-video/out/
 node_modules/
 .hermes-src/
 .hermes-home/

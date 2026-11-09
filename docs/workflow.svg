@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" font-family="Inter, Helvetica, Arial, sans-serif">
+  <rect width="1600" height="900" fill="#F7F6F2"/>
+  <text x="80" y="92" font-size="46" font-weight="800" fill="#13252B">Hathor catch-up: how a vaccine answer is made</text>
+  <text x="80" y="140" font-size="28" fill="#4A5A60">A Hermes Agent plugin · every box is a real function in the repo</text>
+
+  <!-- lane: Hermes turn -->
+  <g font-size="28">
+    <rect x="80" y="200" width="300" height="150" rx="18" fill="#FFFFFF" stroke="#13252B" stroke-width="2"/>
+    <text x="104" y="246" font-weight="800" fill="#13252B">Parent asks</text>
+    <text x="104" y="286" fill="#4A5A60">card dates, one</text>
+    <text x="104" y="322" fill="#4A5A60">country → another</text>
+
+    <rect x="440" y="200" width="320" height="150" rx="18" fill="#FFF4E0" stroke="#E8A33D" stroke-width="3"/>
+    <text x="464" y="246" font-weight="800" fill="#13252B">pre_llm_call</text>
+    <text x="464" y="286" fill="#4A5A60">vaccine question?</text>
+    <text x="464" y="322" fill="#4A5A60">EN · AR · ES → tool</text>
+
+    <rect x="820" y="200" width="320" height="150" rx="18" fill="#FFFFFF" stroke="#13252B" stroke-width="2"/>
+    <text x="844" y="246" font-weight="800" fill="#13252B">Model (any)</text>
+    <text x="844" y="286" fill="#4A5A60">calls</text>
+    <text x="844" y="322" fill="#4A5A60">vaccine_card_check</text>
+
+    <rect x="1200" y="200" width="320" height="150" rx="18" fill="#FFF4E0" stroke="#E8A33D" stroke-width="3"/>
+    <text x="1224" y="246" font-weight="800" fill="#13252B">post_tool_call</text>
+    <text x="1224" y="286" fill="#4A5A60">records the schedule</text>
+    <text x="1224" y="322" fill="#4A5A60">source it used</text>
+  </g>
+  <g stroke="#13252B" stroke-width="3" fill="none" marker-end="url(#a)">
+    <path d="M380 275 H432"/><path d="M760 275 H812"/><path d="M1140 275 H1192"/>
+    <path d="M980 350 V418"/>
+  </g>
+
+  <!-- engine -->
+  <rect x="80" y="420" width="1440" height="200" rx="18" fill="#13252B"/>
+  <text x="110" y="466" font-size="28" font-weight="800" fill="#E8A33D">Deterministic engine · hathor_core (no model, no network)</text>
+  <g font-size="26" fill="#FFFFFF">
+    <text x="110" y="520" font-weight="700">1 validate_card</text>
+    <text x="110" y="556" fill="#C9D3D6">min/max age, 28-day</text>
+    <text x="110" y="588" fill="#C9D3D6">interval per component</text>
+    <text x="470" y="520" font-weight="700">2 match_schedule</text>
+    <text x="470" y="556" fill="#C9D3D6">Pentavalent → DTP+HepB+Hib</text>
+    <text x="470" y="588" fill="#C9D3D6">measles ≠ MMR (partial)</text>
+    <text x="850" y="520" font-weight="700">3 bucket</text>
+    <text x="850" y="556" fill="#C9D3D6">overdue · due · aged out</text>
+    <text x="850" y="588" fill="#C9D3D6">missed birth dose</text>
+    <text x="1180" y="520" font-weight="700">4 plan_catchup</text>
+    <text x="1180" y="556" fill="#C9D3D6">dated visits, live</text>
+    <text x="1180" y="588" fill="#C9D3D6">vaccines 28 d apart</text>
+  </g>
+  <text x="110" y="660" font-size="24" fill="#4A5A60">Sourced schedules: Egypt MoHP card · Sudan · Syria · Nigeria · Ethiopia · Eritrea · South Sudan · WHO</text>
+
+  <!-- output -->
+  <g font-size="28">
+    <rect x="80" y="700" width="700" height="150" rx="18" fill="#E7F5EC" stroke="#2E8B57" stroke-width="3"/>
+    <text x="104" y="746" font-weight="800" fill="#13252B">transform_llm_output: checked</text>
+    <text x="104" y="786" fill="#2E5E43">✓ Checked by Hathor against Egypt MoHP</text>
+    <text x="104" y="822" fill="#2E5E43">card (last updated 2026-04-26)</text>
+    <rect x="820" y="700" width="700" height="150" rx="18" fill="#FFF4E0" stroke="#E8A33D" stroke-width="3"/>
+    <text x="844" y="746" font-weight="800" fill="#13252B">transform_llm_output: not checked</text>
+    <text x="844" y="786" fill="#7A5310">⚠ names doses without a check →</text>
+    <text x="844" y="822" fill="#7A5310">warning appended to the reply</text>
+  </g>
+  <text x="80" y="884" font-size="22" fill="#4A5A60">Decision support: a paediatrician confirms the plan · rules by a physician author, sign-off status in every result</text>
+  <defs><marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#13252B"/></marker></defs>
+</svg>
