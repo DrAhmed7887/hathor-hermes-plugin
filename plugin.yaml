@@ -1,0 +1,21 @@
+name: hathor-catchup
+version: 0.1.0
+manifest_version: 2
+api_version: 1
+description: >-
+  Check a child's vaccination card against a sourced national schedule (Egypt,
+  Sudan, Syria, Nigeria, Ethiopia, Eritrea, South Sudan, WHO) and get the missing
+  doses and a dated catch-up plan. Deterministic engine, no model calls; a guard
+  hook keeps vaccine answers tied to the tool and its source.
+author: Ahmed Zayed
+license: MIT
+homepage: https://github.com/DrAhmed7887/hathor-hermes-plugin
+tags: [health, vaccines, children, migration, arabic]
+requires_hermes: ">=0.23.0"
+provides_tools:
+  - vaccine_card_check
+  - vaccine_schedule
+provides_hooks:
+  - pre_llm_call
+  - post_tool_call
+  - transform_llm_output
