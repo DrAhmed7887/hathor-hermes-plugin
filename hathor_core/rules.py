@@ -38,6 +38,21 @@ COMPONENTS: dict[str, tuple[str, ...]] = {
     "RCV": ("Rubella",),
 }
 
+# Card labels -> engine antigen names (lower-case, spaces normalised).
+ANTIGEN_ALIASES: dict[str, str] = {
+    "dtp": "DPT", "dpt": "DPT", "dtwp": "DTPw", "dtpw": "DTPw", "dtap": "DTaP",
+    "hep b": "HepB", "hepb": "HepB", "hepatitis b": "HepB", "hbv": "HepB",
+    "hep a": "HepA", "hepatitis a": "HepA",
+    "penta": "Pentavalent", "pentavalent": "Pentavalent", "hexa": "Hexavalent",
+    "opv": "OPV", "oral polio": "OPV", "bopv": "OPV", "ipv": "IPV", "polio injection": "IPV",
+    "pcv": "PCV", "pcv13": "PCV", "pcv10": "PCV", "pneumococcal": "PCV",
+    "rota": "Rotavirus", "rotavirus": "Rotavirus", "rv": "Rotavirus",
+    "measles": "Measles", "mcv": "MCV", "mr": "MR", "mmr": "MMR", "mmrv": "MMRV",
+    "varicella": "Varicella", "chickenpox": "Varicella",
+    "yellow fever": "YellowFever", "yf": "YellowFever", "mena": "MenA",
+    "men a": "MenA", "hpv": "HPV", "bcg": "BCG", "hib": "Hib", "td": "Td", "dt": "DT",
+}
+
 # Minimum age (days) for a dose to count. SIGNED_HATHOR (dose_validation.py),
 # plus PENDING_SIGNOFF rows for combination labels Hathor validated via DPT.
 MIN_AGE_DAYS: dict[str, int] = {
@@ -81,6 +96,16 @@ DAYS_PER_MONTH = 30.4375
 BIRTH_DOSE_ANTIGENS = frozenset({"HepB", "OPV"})
 BIRTH_DOSE_WINDOW_DAYS = 28
 
+# Live parenteral vaccines not given on the same day must be at least 28 days
+# apart (catch-up planning only). PENDING_SIGNOFF.
+LIVE_PARENTERAL = frozenset({"MMR", "MR", "MMRV", "MCV", "RCV", "Measles", "Rubella",
+                             "Varicella", "YellowFever"})
+LIVE_SPACING_DAYS = 28
+
+# A catch-up dose joins an existing visit only if that visit is at most this
+# many days after the dose's own earliest day; otherwise it opens a new visit.
+VISIT_JOIN_WINDOW_DAYS = 14
+
 RULE_STATUS = {
     "signed": SIGNED_HATHOR,
     "pending_signoff": [
@@ -88,6 +113,7 @@ RULE_STATUS = {
         "WHO MCV/RCV labels mapped to Measles/Rubella",
         "Minimum ages for Pentavalent/Hexavalent/Pentaxim (42 d), MCV (180 d), RCV/MR/MMRV (270 d)",
         "Doses credited in order per component instead of by dose number",
+        "Live parenteral vaccines (MMR, MR, MMRV, Varicella, YellowFever, measles/rubella) planned the same day or at least 28 days apart",
         "Birth-dose slots (HepB-0, OPV-0) credited only within 28 days of birth; missed ones are reported, not scheduled",
     ],
 }

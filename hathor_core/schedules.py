@@ -82,3 +82,10 @@ def load_schedule(country: str) -> dict:
         "last_updated": raw.get("last_updated"),
         "doses": doses,
     }
+
+
+@lru_cache(maxsize=1)
+def all_schedule_antigens() -> frozenset[str]:
+    """Every antigen label used by any shipped schedule."""
+    return frozenset(d["antigen"] for key in supported_countries()
+                     for d in _load_raw(key).get("doses", []) if d.get("antigen"))

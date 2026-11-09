@@ -120,6 +120,26 @@ class Guard(unittest.TestCase):
         out = guard.on_transform_llm_output(response_text="He needs PCV.", session_id="s")
         self.assertIn("not checked", out)
 
+    def test_other_sessions_check_does_not_vouch_for_this_one(self):
+        guard.on_pre_llm_call(session_id="A", user_message="vaccines for my son")
+        result = tools.vaccine_schedule({"country": "WHO"})
+        guard.on_post_tool_call(tool_name="vaccine_schedule", result=result, task_id="B",
+                                session_id="B")
+        guard.on_pre_llm_call(session_id="B", user_message="vaccine schedule please")
+        out = guard.on_transform_llm_output(response_text="He needs PCV.", session_id="A")
+        self.assertIn("not checked", out)
+
+    def test_hooks_never_raise_on_odd_payloads(self):
+        self.assertIsNone(guard.on_pre_llm_call(session_id="s", user_message=[{"type": "image"}]))
+        self.assertIsNotNone(guard.on_pre_llm_call(session_id="s",
+                                                   user_message=[{"type": "text", "text": "vaccine card"}]))
+        self.assertIsNone(guard.on_transform_llm_output(response_text=["x"], session_id="s"))
+        self.assertIsNone(guard.on_post_tool_call(tool_name="vaccine_card_check", result=None))
+
+    def test_topic_needs_whole_words(self):
+        for text in ("I shot a photo", "rotate the image", "pentagon shape", "a booster seat"):
+            self.assertIsNone(guard.on_pre_llm_call(session_id="s", user_message=text), text)
+
     def test_unrelated_reply_untouched(self):
         guard.on_pre_llm_call(session_id="s", user_message="Book a table for two")
         self.assertIsNone(guard.on_transform_llm_output(response_text="Done.", session_id="s"))
