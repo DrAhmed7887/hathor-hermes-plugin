@@ -5,6 +5,7 @@ on:
   pull_request:
 permissions:
   contents: read
+  pull-requests: read
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -28,3 +29,25 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  hermes-validate:
+    # The same check the plugin catalog CI runs, against Hermes v0.23.0.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: hathor-catchup
+      - uses: actions/checkout@v4
+        with:
+          repository: NousResearch/hermes-agent
+          ref: v0.23.0
+          path: hermes-agent
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Hermes from its own lock file
+        working-directory: hermes-agent
+        run: uv sync --frozen --no-dev
+      - name: hermes plugins validate
+        working-directory: hermes-agent
+        run: uv run --frozen hermes plugins validate "$GITHUB_WORKSPACE/hathor-catchup" --install-deps
+      - name: hermes plugins doctor
+        working-directory: hermes-agent
+        run: uv run --frozen hermes plugins doctor "$GITHUB_WORKSPACE/hathor-catchup" --ci

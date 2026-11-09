@@ -22,8 +22,11 @@ def register(ctx):
     ctx.register_hook("post_tool_call", guard.on_post_tool_call)
     ctx.register_hook("transform_llm_output", guard.on_transform_llm_output)
 
+    register_skill = getattr(ctx, "register_skill", None)
     skill_md = Path(__file__).parent / "skills" / "vaccine-catchup" / "SKILL.md"
-    if skill_md.exists():
-        ctx.register_skill("vaccine-catchup", skill_md)
+    if register_skill is None:
+        logger.info("hathor-catchup: this Hermes has no register_skill; skill not bundled")
+    elif skill_md.exists():
+        register_skill("vaccine-catchup", skill_md)
     else:
         logger.warning("hathor-catchup: bundled skill missing at %s", skill_md)

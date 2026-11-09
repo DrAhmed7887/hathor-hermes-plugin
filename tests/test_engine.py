@@ -39,6 +39,7 @@ class SudanToEgypt(unittest.TestCase):
         self.assertEqual(self.r["summary"], {
             "completed": 13, "partial": 2, "overdue": 5, "due_now": 0, "upcoming": 2,
             "aged_out": 0, "missed_birth_dose": 0, "invalid_doses": 0,
+            "unrecognised_doses": 0, "not_in_this_schedule": 2,  # 2 rotavirus doses: not in Egypt's schedule
         })
 
     def test_measles_only_dose_leaves_mumps_rubella_open(self):
@@ -130,6 +131,58 @@ class CatchUpSpacing(unittest.TestCase):
         for visit in r["catch_up_visits"]:
             comps = [c for g in visit["give"] for c in g["for_components"]]
             self.assertEqual(len(comps), len(set(comps)))
+
+
+class ReviewFindings(unittest.TestCase):
+    """Cases from the independent review (9 Nov), expected results written first."""
+
+    def test_newborn_gets_birth_doses_and_bcg_today(self):
+        r = check_card("Egypt", "2026-01-01", [], today="2026-01-06")
+        self.assertEqual(r["summary"]["missed_birth_dose"], 0)
+        first = r["catch_up_visits"][0]
+        self.assertEqual(first["days_from_today"], 0)
+        self.assertTrue({"HepB dose 1", "OPV dose 1", "BCG dose 1"} <= {g["slot"] for g in first["give"]})
+
+    def test_close_single_dose_drops_only_that_component(self):
+        r = check_card("WHO", "2026-01-01", [
+            {"antigen": "HepB", "date_given": "2026-01-31"},
+            {"antigen": "Pentavalent", "date_given": "2026-02-12"},
+        ], today="2026-03-01")
+        penta = [d for d in r["invalid_doses"] if d["antigen"] == "Pentavalent"]
+        self.assertEqual(penta, [])
+        self.assertIn(("DTaP", 1), _slots(r, "completed"))
+        self.assertIn(("Hib", 1), _slots(r, "completed"))
+
+    def test_labels_are_normalised_and_unknown_ones_reported(self):
+        r = check_card("Egypt", "2025-01-01", [
+            {"antigen": "pentavalent", "date_given": "2025-03-01"},
+            {"antigen": "DTP", "date_given": "2025-05-01"},
+            {"antigen": "Hep B", "date_given": "2025-01-01"},
+            {"antigen": "Vitamin A", "date_given": "2025-07-01"},
+        ], today="2025-08-01")
+        self.assertIn(("Pentavalent", 1), _slots(r, "completed"))
+        self.assertEqual([d["antigen"] for d in r["unrecognised_doses"]], ["Vitamin A"])
+        self.assertTrue(any("Not recognised" in f for f in r["flags"]))
+
+    def test_future_dose_rejected(self):
+        r = check_card("Egypt", "2026-01-01", [{"antigen": "Pentavalent", "date_given": "2026-09-01"}],
+                       today="2026-03-01")
+        self.assertIn("after today", r["invalid_doses"][0]["reasons"][0])
+
+    def test_live_vaccines_kept_28_days_apart(self):
+        r = check_card("Egypt", "2025-01-01", [{"antigen": "MMR", "date_given": "2026-01-27"}],
+                       today="2026-02-01")
+        var = [v["days_from_today"] for v in r["catch_up_visits"]
+               for g in v["give"] if g["slot"] == "Varicella dose 1"]
+        self.assertEqual(len(var), 1)
+        # 27 Jan + 28 days = 24 Feb (day 23); it may join a visit up to 14 days later.
+        self.assertTrue(23 <= var[0] <= 37, var)
+
+    def test_dose_does_not_ride_a_far_later_visit(self):
+        r = check_card("Egypt", "2026-01-01", [], today="2026-01-06")
+        bcg = [v["days_from_today"] for v in r["catch_up_visits"]
+               for g in v["give"] if g["slot"] == "BCG dose 1"]
+        self.assertEqual(bcg, [0])
 
 
 class BadInput(unittest.TestCase):

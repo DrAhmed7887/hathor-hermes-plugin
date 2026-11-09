@@ -16,6 +16,7 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from . import rules
+from .schedules import all_schedule_antigens
 
 _DISCLAIMER = (
     "Decision support, not a prescription. A licensed paediatrician or the "
@@ -36,50 +37,96 @@ def _parse_date(value: object, field: str) -> date:
         raise CardError(f"{field} must be YYYY-MM-DD, got {value!r}") from exc
 
 
-def _dose_reasons(antigen: str, age: int, last_age: dict[str, int]) -> list[str]:
-    reasons = []
+def canonical_antigen(raw: str) -> str | None:
+    """Map a card label to the engine's antigen name, or None if unknown."""
+    key = " ".join(str(raw).replace("-", " ").replace("_", " ").lower().split())
+    if key in rules.ANTIGEN_ALIASES:
+        return rules.ANTIGEN_ALIASES[key]
+    for name in _known_antigens():
+        if name.lower() == key or name.lower().replace("-", " ") == key:
+            return name
+    return None
+
+
+def _known_antigens() -> set[str]:
+    return set(rules.COMPONENTS) | set(rules.MIN_AGE_DAYS) | all_schedule_antigens()
+
+
+def _whole_dose_reasons(antigen: str, age: int, age_today: int) -> list[str]:
     if age < 0:
-        reasons.append(f"Given {-age} days before the date of birth: re-check the year on the card.")
-        return reasons
+        return [f"Given {-age} days before the date of birth: re-check the year on the card."]
+    if age > age_today:
+        return ["Dated after today: re-check the date on the card."]
+    reasons = []
     min_age = rules.MIN_AGE_DAYS.get(antigen, rules.DEFAULT_MIN_AGE_DAYS)
     if age < min_age:
         reasons.append(f"Given at {age} days; minimum age for {antigen} is {min_age} days.")
     max_age = rules.MAX_AGE_DAYS.get(antigen)
     if max_age is not None and age > max_age:
         reasons.append(f"Given at {age} days; {antigen} is not given after {max_age} days.")
-    for comp in rules.components_for(antigen):
-        prior = last_age.get(comp)
-        if prior is not None and age - prior < rules.MIN_INTERVAL_DAYS:
-            reasons.append(
-                f"{comp}: only {age - prior} days after the previous dose "
-                f"(minimum {rules.MIN_INTERVAL_DAYS})."
-            )
     return reasons
 
 
-def validate_card(dob: date, doses: list[dict]) -> tuple[list[dict], list[dict]]:
-    """Return (valid, invalid) doses, each with ``age_days``, sorted by age."""
+def _component_check(antigen: str, age: int, last_age: dict[str, int]) -> tuple[list[str], list[str]]:
+    """Split a dose's components into (counted, reasons for the ones dropped)."""
+    counted, dropped = [], []
+    for comp in rules.components_for(antigen):
+        prior = last_age.get(comp)
+        if prior is None or age - prior >= rules.MIN_INTERVAL_DAYS:
+            counted.append(comp)
+        elif age == prior:
+            dropped.append(f"{comp}: already given the same day, not counted twice.")
+        else:
+            dropped.append(f"{comp}: only {age - prior} days after the previous dose "
+                           f"(minimum {rules.MIN_INTERVAL_DAYS}), so not counted.")
+    return counted, dropped
+
+
+def _parse_doses(dob: date, doses: list) -> tuple[list[dict], list[dict]]:
     if not isinstance(doses, list):
         raise CardError("doses must be a list")
-    parsed = []
+    parsed, unrecognised = [], []
     for i, dose in enumerate(doses):
         if not isinstance(dose, dict) or not str(dose.get("antigen", "")).strip():
             raise CardError(f"dose {i + 1} needs an antigen")
         given = _parse_date(dose.get("date_given"), f"dose {i + 1} date_given")
-        parsed.append({"antigen": str(dose["antigen"]).strip(),
-                       "date_given": given.isoformat(), "age_days": (given - dob).days})
+        label = str(dose["antigen"]).strip()
+        name = canonical_antigen(label)
+        row = {"antigen": name or label, "date_given": given.isoformat(),
+               "age_days": (given - dob).days}
+        if name is None:
+            unrecognised.append({**row, "reasons": [f"'{label}' is not a vaccine this engine knows; "
+                                                    "check the label and add it again."]})
+        else:
+            if name != label:
+                row["card_label"] = label
+            parsed.append(row)
     parsed.sort(key=lambda d: d["age_days"])
+    return parsed, unrecognised
 
+
+def validate_card(dob: date, doses: list, age_today: int) -> tuple[list[dict], list[dict], list[dict]]:
+    """Return (valid, invalid, unrecognised) doses, sorted by age.
+
+    A valid dose carries ``components``: the parts it is credited for. A
+    combination dose given too soon after a single-antigen dose keeps the
+    parts that were on time and lists the dropped ones in ``notes``.
+    """
+    parsed, unrecognised = _parse_doses(dob, doses)
     valid, invalid, last_age = [], [], {}
     for dose in parsed:
-        reasons = _dose_reasons(dose["antigen"], dose["age_days"], last_age)
+        reasons = _whole_dose_reasons(dose["antigen"], dose["age_days"], age_today)
         if reasons:
             invalid.append({**dose, "reasons": reasons})
             continue
-        valid.append(dose)
-        for comp in rules.components_for(dose["antigen"]):
+        counted, dropped = _component_check(dose["antigen"], dose["age_days"], last_age)
+        if not counted:
+            invalid.append({**dose, "reasons": dropped})
+            continue
+        valid.append({**dose, "components": counted, **({"notes": dropped} if dropped else {})})
+        for comp in counted:
             last_age[comp] = dose["age_days"]
-    return valid, invalid
+    return valid, invalid, unrecognised
 
 
 def _slot_order(slot: dict) -> tuple:
@@ -98,7 +145,7 @@ def match_schedule(schedule: list[dict], valid: list[dict]) -> list[dict]:
     """Credit valid doses to slots in age order, per component."""
     pools: dict[str, list[dict]] = {}
     for dose in valid:
-        for comp in rules.components_for(dose["antigen"]):
+        for comp in dose["components"]:
             pools.setdefault(comp, []).append(dose)
     cursor = {comp: 0 for comp in pools}
 
@@ -148,8 +195,10 @@ def bucket(matched: list[dict], age_days: int) -> dict[str, list[dict]]:
         rec = slot["recommended_age_months"]
         if not slot["missing_components"]:
             out["completed"].append(slot)
-        elif slot["birth_slot"]:
+        elif slot["birth_slot"] and age_days > rules.BIRTH_DOSE_WINDOW_DAYS:
             out["missed_birth_dose"].append(slot)
+        elif slot["birth_slot"]:
+            out["due_now"].append(slot)
         elif _aged_out(slot, age_days):
             out["aged_out"].append(slot)
         elif len(slot["missing_components"]) < len(slot["required_components"]):
