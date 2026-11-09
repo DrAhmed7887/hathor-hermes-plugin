@@ -2,6 +2,8 @@
 
 A [Hermes Agent](https://github.com/NousResearch/hermes-agent) plugin. A family moves from Sudan to Egypt with a paper vaccination card. Which doses count, which are missing, and when should the child come back?
 
+![How a vaccine answer is made: hooks, tool, deterministic engine, sourced footer](docs/workflow.png)
+
 Hathor answers from **sourced national schedules** with a **deterministic engine**, not from the model's memory:
 
 - **`vaccine_card_check`** validates every dose on the card (minimum age, maximum age, minimum interval) and credits combination vaccines component by component. A Pentavalent dose covers DTP, HepB and Hib but not IPV; a measles-only dose leaves mumps and rubella open. It returns completed, partial, overdue, due-now, upcoming and aged-out slots, invalid doses with reasons, a **dated catch-up plan**, and the schedule's source.
