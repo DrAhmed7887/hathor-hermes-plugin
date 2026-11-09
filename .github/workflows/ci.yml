@@ -28,3 +28,15 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  hermes-validate:
+    # The same check the plugin catalog CI runs, against Hermes v0.23.0.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: hathor-catchup
+      - uses: astral-sh/setup-uv@v6
+      - run: uv venv --python 3.14 /tmp/hermes
+      - run: VIRTUAL_ENV=/tmp/hermes uv pip install "hermes-agent @ git+https://github.com/NousResearch/hermes-agent@v0.23.0"
+      - run: /tmp/hermes/bin/hermes plugins validate "$GITHUB_WORKSPACE/hathor-catchup" --install-deps
+      - run: /tmp/hermes/bin/hermes plugins doctor "$GITHUB_WORKSPACE/hathor-catchup" --ci
