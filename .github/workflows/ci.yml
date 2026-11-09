@@ -5,6 +5,7 @@ on:
   pull_request:
 permissions:
   contents: read
+  pull-requests: read
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -35,8 +36,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: hathor-catchup
+      - uses: actions/checkout@v4
+        with:
+          repository: NousResearch/hermes-agent
+          ref: v0.23.0
+          path: hermes-agent
       - uses: astral-sh/setup-uv@v6
-      - run: uv venv --python 3.14 /tmp/hermes
-      - run: VIRTUAL_ENV=/tmp/hermes uv pip install "hermes-agent @ git+https://github.com/NousResearch/hermes-agent@v0.23.0"
-      - run: /tmp/hermes/bin/hermes plugins validate "$GITHUB_WORKSPACE/hathor-catchup" --install-deps
-      - run: /tmp/hermes/bin/hermes plugins doctor "$GITHUB_WORKSPACE/hathor-catchup" --ci
+      - name: Install Hermes from its own lock file
+        working-directory: hermes-agent
+        run: uv sync --frozen --no-dev
+      - name: hermes plugins validate
+        working-directory: hermes-agent
+        run: uv run --frozen hermes plugins validate "$GITHUB_WORKSPACE/hathor-catchup" --install-deps
+      - name: hermes plugins doctor
+        working-directory: hermes-agent
+        run: uv run --frozen hermes plugins doctor "$GITHUB_WORKSPACE/hathor-catchup" --ci
