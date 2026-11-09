@@ -30,9 +30,21 @@ Then ask, for example: *"My daughter was born 1 March 2025 in Sudan. Her card sh
 1. **Validate** each dose: its age at the dose, the antigen's minimum and maximum age, and at least 28 days since the previous dose of each component. Invalid doses are listed with the reason, not silently dropped.
 2. **Credit** valid doses to the target schedule's slots in age order, component by component. Birth-dose slots (HepB-0, OPV-0) are credited only by a dose given in the first 28 days. A missed birth dose is reported, not scheduled late.
 3. **Bucket** each slot by the child's age: overdue (more than 2 months past), due now, upcoming, or aged out (Rotavirus after 24 months, Hib after 5 years).
-4. **Plan** visits from today: non-live vaccines first, never two doses of one component in one visit, catch-up spacing per antigen (PCV 56 days, Varicella 84, others 28), and never before the slot's minimum age.
+4. **Plan** visits from today:
+   - non-live vaccines first;
+   - never two doses of one component in one visit;
+   - catch-up spacing per antigen (PCV 56 days, Varicella 84, others 28);
+   - live injected vaccines on the same day or at least 28 days apart;
+   - never before the slot's minimum age.
 
-The rule tables live in `hathor_core/rules.py`. Each table says whether it comes unchanged from the original [Hathor](https://github.com/DrAhmed7887/hathor) engine or is new here and pending physician sign-off. Every result carries that status in `rule_status`.
+Card labels are normalised ("pentavalent", "DTP", "Hep B"). Labels the engine doesn't know, and doses that aren't part of the target schedule, are listed back rather than silently dropped.
+
+The rule tables live in `hathor_core/rules.py`. Each rule is marked in one of three ways:
+- unchanged from the original [Hathor](https://github.com/DrAhmed7887/hathor) engine;
+- new here and signed by the physician author on 9 Nov 2026;
+- still pending sign-off.
+
+Every result reports this status in `rule_status`, so nothing is presented as reviewed when it isn't.
 
 ## Tests
 
@@ -40,7 +52,7 @@ The rule tables live in `hathor_core/rules.py`. Each table says whether it comes
 python3 -m unittest discover -s tests
 ```
 
-There are 27 tests, with expected results written from the schedules before the code ran. They cover:
+There are 36 tests, with expected results written from the schedules before the code ran. They cover:
 - a Sudanese card checked against Egypt: 13 complete, 2 partial (MMR), 5 overdue, three dated visits;
 - an on-time Egyptian card;
 - invalid doses;
@@ -48,7 +60,8 @@ There are 27 tests, with expected results written from the schedules before the 
 - catch-up spacing;
 - bad input;
 - plugin registration against the manifest;
-- the guard hooks.
+- the guard hooks;
+- the independent review's cases: newborn birth doses, combination doses, card labels, future dates and live-vaccine spacing.
 
 All test data is synthetic.
 
