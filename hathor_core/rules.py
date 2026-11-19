@@ -2,11 +2,11 @@
 
 Every table here is a clinical rule. Rows marked ``SIGNED_HATHOR`` come
 unchanged from the Hathor engine (github.com/DrAhmed7887/hathor, api/src/
-hathor/tools/*.py). Rows marked ``PENDING_SIGNOFF`` are new in this plugin
-and must be reviewed by the physician owner before they are described as
-signed in any public material. Rows marked ``SIGNED_2026_11_09`` were new here
-and were signed by the physician owner on 9 Nov 2026. ``RULE_STATUS`` is
-exported so tools can report it.
+hathor/tools/*.py). Rows marked ``SIGNED_2026_11_09`` and
+``SIGNED_2026_11_19`` were new here and were signed by the physician owner on
+9 Nov 2026 and 19 Nov 2026. A new rule is marked ``PENDING_SIGNOFF`` until the
+physician owner reviews it, and must not be described as signed in any public
+material before then. ``RULE_STATUS`` is exported so tools can report it.
 """
 
 from __future__ import annotations
@@ -14,6 +14,7 @@ from __future__ import annotations
 SIGNED_HATHOR = "hathor-engine-2026-05"
 PENDING_SIGNOFF = "pending-physician-signoff"
 SIGNED_2026_11_09 = "signed-by-physician-2026-11-09"
+SIGNED_2026_11_19 = "signed-by-physician-2026-11-19"
 
 # Combination products -> the components one dose supplies.
 # SIGNED_2026_11_09: Hathor tracked the DPT triple as one "DPT" token. This
@@ -99,13 +100,14 @@ BIRTH_DOSE_ANTIGENS = frozenset({"HepB", "OPV"})
 BIRTH_DOSE_WINDOW_DAYS = 28
 
 # Live parenteral vaccines not given on the same day must be at least 28 days
-# apart (catch-up planning only). PENDING_SIGNOFF.
+# apart (catch-up planning only). SIGNED_2026_11_19.
 LIVE_PARENTERAL = frozenset({"MMR", "MR", "MMRV", "MCV", "RCV", "Measles", "Rubella",
                              "Varicella", "YellowFever"})
 LIVE_SPACING_DAYS = 28
 
 # A catch-up dose joins an existing visit only if that visit is at most this
 # many days after the dose's own earliest day; otherwise it opens a new visit.
+# SIGNED_2026_11_19.
 VISIT_JOIN_WINDOW_DAYS = 14
 
 RULE_STATUS = {
@@ -117,11 +119,12 @@ RULE_STATUS = {
         "Doses credited in order per component instead of by dose number",
         "Birth-dose slots (HepB-0, OPV-0) credited only within 28 days of birth; missed ones are reported, not scheduled",
     ],
-    "pending_signoff": [
+    "signed_by_physician_2026_11_19": [
         "Live parenteral vaccines (MMR, MR, MMRV, Varicella, YellowFever, measles/rubella) planned the same day or at least 28 days apart",
         "A combination dose given too soon after a single-antigen dose keeps its on-time components",
         "A catch-up dose joins an existing visit only within 14 days of its own earliest day",
     ],
+    "pending_signoff": [],
 }
 
 

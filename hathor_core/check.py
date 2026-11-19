@@ -110,7 +110,8 @@ def validate_card(dob: date, doses: list, age_today: int) -> tuple[list[dict], l
 
     A valid dose carries ``components``: the parts it is credited for. A
     combination dose given too soon after a single-antigen dose keeps the
-    parts that were on time and lists the dropped ones in ``notes``.
+    parts that were on time and lists the dropped ones in ``notes``
+    (rules.SIGNED_2026_11_19).
     """
     parsed, unrecognised = _parse_doses(dob, doses)
     valid, invalid, last_age = [], [], {}
