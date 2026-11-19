@@ -69,7 +69,8 @@ class SudanToEgypt(unittest.TestCase):
     def test_sources_and_disclaimer_present(self):
         self.assertIn("MoHP", self.r["schedule_source"])
         self.assertIn("paediatrician", self.r["disclaimer"])
-        self.assertTrue(self.r["rule_status"]["pending_signoff"])
+        self.assertEqual(self.r["rule_status"]["pending_signoff"], [])
+        self.assertEqual(len(self.r["rule_status"]["signed_by_physician_2026_11_19"]), 3)
 
 
 class EgyptOnTime(unittest.TestCase):

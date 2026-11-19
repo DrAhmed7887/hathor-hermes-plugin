@@ -41,12 +41,12 @@ Then ask, for example: *"My daughter was born 1 March 2025 in Sudan. Her card sh
 
 Card labels are normalised ("pentavalent", "DTP", "Hep B"). Labels the engine doesn't know, and doses that aren't part of the target schedule, are listed back rather than silently dropped.
 
-The rule tables live in `hathor_core/rules.py`. Each rule is marked in one of three ways:
+The rule tables live in `hathor_core/rules.py`. Each rule is marked with where it comes from:
 - unchanged from the original [Hathor](https://github.com/DrAhmed7887/hathor) engine;
-- new here and signed by the physician author on 9 Nov 2026;
-- still pending sign-off.
+- new here and signed by the physician author on 9 Nov 2026 (combination-vaccine components, minimum ages, birth-dose window);
+- new here and signed by the physician author on 19 Nov 2026 (live-vaccine spacing, partial credit for combination doses, the 14-day visit window).
 
-Every result reports this status in `rule_status`, so nothing is presented as reviewed when it isn't.
+No rule is pending sign-off. A future rule stays marked pending until it is reviewed. Every result reports this status in `rule_status`, so nothing is presented as reviewed when it isn't.
 
 ## Tests
 
